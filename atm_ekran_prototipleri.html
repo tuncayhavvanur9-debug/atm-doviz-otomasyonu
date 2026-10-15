@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATM Döviz Çekme - Ekran Prototipleri (UI/UX Mockups)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    .atm-screen {
+      aspect-ratio: 4 / 3;
+      background: radial-gradient(circle at 50% 20%, #0d2847 0%, #051329 100%);
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.85);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-8 font-sans antialiased">
+
+  <!-- Üst Başlık & Proje Bilgisi -->
+  <div class="max-w-6xl mx-auto mb-8">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 bg-cyan-950 border border-cyan-500/40 rounded-full text-cyan-400 text-xs font-semibold mb-2">
+          UI / UX TASARIM SPESİFİKASYONU
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white">ATM Döviz Çekme Ekran Prototipleri</h1>
+        <p class="text-sm text-slate-400 mt-1">Sistem gereksinimlerine göre tasarlanan 7 temel ATM ekranı ve akış senaryoları.</p>
+      </div>
+
+      <!-- Ekranlar Arası Hızlı Atlama Menüsü -->
+      <div class="flex flex-wrap gap-1.5 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+        <button onclick="switchScreen(1)" id="tab1" class="px-3 py-1.5 text-xs font-bold rounded-lg transition bg-cyan-500 text-slate-950">1. Karşılama & Dil</button>
+        <button onclick="switchScreen(2)" id="tab2" class="px-3 py-1.5 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:text-white">2. PIN Girişi</button>
+        <button onclick="switchScreen(3)" id="tab3" class="px-3 py-1.5 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:text-white">3. Ana Menü & Kurlar</button>
+        <button onclick="switchScreen(4)" id="tab4" class="px-3 py-1.5 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:text-white">4. Tutar & Kupür</button>
+        <button onclick="switchScreen(5)" id="tab5" class="px-3 py-1.5 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:text-white">5. İşlem Onayı</button>
+        <button onclick="switchScreen(6)" id="tab6" class="px-3 py-1.5 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:text-white">6. Para Dağıtımı & Fiş</button>
+        <button onclick="switchScreen(7)" id="tab7" class="px-3 py-1.5 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:text-white">7. Hata / Bloke</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ana Gösterim Alanı: ATM Çerçevesi + Ekran Detayları -->
+  <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+    <!-- SOL: ATM Ekran Çerçevesi (Mockup Viewport) -->
+    <div class="lg:col-span-7 bg-slate-900 p-4 sm:p-6 rounded-3xl border-4 border-slate-700 shadow-2xl relative">
+      <div class="flex justify-between items-center mb-3 px-2 text-xs text-slate-400 font-mono">
+        <span>ATM MODEL: NCR-5884 | DOKUNMATİK 15" TFT</span>
+        <span class="text-emerald-400">● ÇÖZÜNÜRLÜK: 1024x768</span>
+      </div>
+
+      <!-- Fiziksel Ekran Bezel'i -->
+      <div class="atm-screen rounded-2xl p-6 border-2 border-slate-700/80 flex flex-col justify-between relative overflow-hidden select-none">
+        
+        <!-- Ekran İçerikleri Buraya Render Edilecek -->
+        <div id="screenContainer" class="h-full flex flex-col justify-between">
+          <!-- JS Render -->
+        </div>
+
+      </div>
+
+      <!-- Ekran Altı Dokunmatik Fonksiyon / Gezinme Düğmeleri -->
+      <div class="mt-4 flex justify-between items-center pt-2 border-t border-slate-800">
+        <button onclick="prevScreen()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+          <span>◀ Önceki Ekran</span>
+        </button>
+        <span id="screenIndicator" class="text-xs font-bold text-cyan-400 font-mono">Ekran 1 / 7</span>
+        <button onclick="nextScreen()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+          <span>Sonraki Ekran ▶</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SAĞ: Ekran Tasarım Spesifikasyonu & Açıklama Kartı -->
+    <div class="lg:col-span-5 flex flex-col gap-4">
+      <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg">
+        <div class="flex items-center justify-between mb-2">
+          <span id="specCode" class="text-xs font-bold text-cyan-400 font-mono uppercase">EKRAN #1</span>
+          <span id="specFR" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">FR-01, FR-02</span>
+        </div>
+        <h3 id="specTitle" class="text-lg font-bold text-white mb-2">Karşılama ve Dil Seçim Ekranı</h3>
+        <p id="specDesc" class="text-xs text-slate-300 leading-relaxed mb-4">
+          Kullanıcının ATM başına geldiğinde karşılaştığı ilk ekrandır. Çok dilli hizmet sunar ve canlı döviz kurlarını ticker bandında döner.
+        </p>
+
+        <!-- UI Elemanları Listesi -->
+        <div class="border-t border-slate-800 pt-3">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Arayüz Bileşenleri (UI Elements):</div>
+          <ul id="specComponents" class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+            <!-- JS doldurur -->
+          </ul>
+        </div>
+
+        <!-- Kullanılabilirlik (UX) ve Güvenlik Notu -->
+        <div class="mt-4 p-3 bg-cyan-950/40 border border-cyan-800/50 rounded-xl">
+          <div class="text-[11px] font-bold text-cyan-300 uppercase tracking-wider mb-1">💡 UX / Güvenlik Kriteri</div>
+          <p id="specUxNote" class="text-xs text-cyan-100/90 leading-snug">
+            Büyük dokunmatik butonlar ve yüksek kontrast ile açık güneş ışığında bile net okunabilirlik sağlanır.
+          </p>
+        </div>
+      </div>
+
+      <!-- Proje Gereksinim Haritası -->
+      <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 text-xs">
+        <div class="font-bold text-slate-300 mb-2">Gereksinim Karşılama Durumu:</div>
+        <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+          <div class="flex items-center gap-1.5 text-emerald-400"><span>✓</span> Çoklu Dil (TR/EN/DE)</div>
+          <div class="flex items-center gap-1.5 text-emerald-400"><span>✓</span> Güvenli 4 Haneli PIN</div>
+          <div class="flex items-center gap-1.5 text-emerald-400"><span>✓</span> USD & EUR Cüzdanları</div>
+          <div class="flex items-center gap-1.5 text-emerald-400"><span>✓</span> 100/50/20 Kupür Dağıtımı</div>
+          <div class="flex items-center gap-1.5 text-emerald-400"><span>✓</span> 2-Phase Rollback Koruması</div>
+          <div class="flex items-center gap-1.5 text-emerald-400"><span>✓</span> Detaylı Bilgi Makbuzu</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JAVASCRIPT: EKRANLAR VE SPESİFİKASYON VERİLERİ -->
+  <script>
+    let currentScreenIndex = 1;
+
+    const screens = {
+      1: {
+        code: "EKRAN #1 (SCR-01)",
+        fr: "FR-01, FR-02 (Çoklu Dil & Giriş)",
+        title: "Karşılama ve Dil Seçim Ekranı",
+        desc: "Kullanıcı ATM'ye yaklaştığında görünen ilk karşılama arayüzüdür. Kullanıcı kartını takmadan önce dilini seçebilir veya kartı taktığı anda varsayılan dil açılır.",
+        components: [
+          "Dil Seçim Butonları: Türkçe, English, Deutsch (Bayraklı ve büyük butonlar)",
+          "Kart Giriş Animasyonu ve Yönlendirici İllüstrasyon",
+          "Canlı Döviz Kuru Ticker Bandı (1 USD = 34.50 TL | 1 EUR = 37.80 TL)",
+          "Banka Logosu ve ATM Seri Numarası Bilgi Bandı"
+        ],
+        uxNote: "Erişilebilirlik standartlarına uygun 44px+ minimum dokunma alanı ve açık havada okunabilir yüksek kontrast.",
+        render: () => `
+          <div class="flex justify-between items-center border-b border-cyan-800/50 pb-2">
+            <span class="text-xs font-bold text-cyan-400 tracking-wider">PAZARLAR BANK | ATM-001</span>
+            <span class="text-[11px] text-emerald-400 font-mono">● SİSTEM AKTİF</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center text-center my-auto px-4">
+            <div class="w-20 h-20 bg-cyan-950/80 border-2 border-cyan-400 rounded-2xl flex items-center justify-center text-4xl shadow-xl shadow-cyan-900/40 mb-4 animate-bounce">
+              💳
+            </div>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-white mb-2">LÜTFEN KARTINIZI TAKINIZ</h2>
+            <p class="text-xs text-cyan-300 max-w-sm mb-6">İşlemlerinize başlamak için banka kartınızı sağ alttaki yuvasına yerleştiriniz.</p>
+
+            <!-- Dil Seçenekleri -->
+            <div class="flex gap-3">
+              <div class="px-4 py-2.5 bg-cyan-500 text-slate-950 rounded-xl font-bold text-xs flex items-center gap-2 shadow-lg">
+                <span>🇹🇷</span> Türkçe
+              </div>
+              <div class="px-4 py-2.5 bg-slate-800 border border-slate-700 text-slate-200 rounded-xl font-bold text-xs flex items-center gap-2">
+                <span>🇬🇧</span> English
+              </div>
+              <div class="px-4 py-2.5 bg-slate-800 border border-slate-700 text-slate-200 rounded-xl font-bold text-xs flex items-center gap-2">
+                <span>🇩🇪</span> Deutsch
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-2.5 rounded-xl border border-cyan-900/40 flex justify-between items-center text-[11px] text-slate-300">
+            <span class="font-mono text-cyan-400">GÜNCEL KURLAR:</span>
+            <span>USD: <strong class="text-emerald-400">34.50 ₺</strong></span>
+            <span>EUR: <strong class="text-blue-400">37.80 ₺</strong></span>
+            <span class="text-slate-500">2026-10-15</span>
+          </div>
+        `
+      },
+
+      2: {
+        code: "EKRAN #2 (SCR-02)",
+        fr: "FR-01, NFR-01 (PIN Doğrulama & Güvenlik)",
+        title: "PIN / Şifre Giriş Ekranı",
+        desc: "Kart takıldıktan sonra kullanıcının 4 haneli PIN şifresini girmesini sağlayan ekrandır. Güvenlik için şifre maskelenir ve 3 hatalı denemede blokaj uyarısı yapılır.",
+        components: [
+          "Maskeli Şifre Alanı: '● ● ● ○' şeklinde girilen hane sayısı göstergesi",
+          "Kalan Deneme Hakkı Sayacı (Örn: 'Kalan Deneme: 3')",
+          "Dokunmatik Sayısal Tuş Takımı (1-9, Temizle, 0, Giriş)",
+          "İptal / Kart İade Butonu (Kullanıcı dilediğinde kartını geri alabilir)"
+        ],
+        uxNote: "Omuz üstü gözetleme (shoulder surfing) riskini önlemek için şifre harfleri asla görünmez, yalnızca noktalar belirir.",
+        render: () => `
+          <div class="flex justify-between items-center border-b border-cyan-800/50 pb-2">
+            <span class="text-xs font-bold text-cyan-400">KİMLİK DOĞRULAMA</span>
+            <span class="text-xs text-amber-400 font-bold">Kalan Hak: 3</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center my-auto">
+            <h3 class="text-base font-bold text-white mb-1">LÜTFEN 4 HANELİ ŞİFRENİZİ GİRİNİZ</h3>
+            <p class="text-[11px] text-slate-400 mb-4">Güvenliğiniz için şifrenizi girerken klavyeyi kapatınız.</p>
+
+            <div class="bg-slate-950 border-2 border-cyan-500 px-8 py-3 rounded-xl text-3xl tracking-widest text-cyan-400 font-mono mb-4 shadow-inner">
+              ● ● ● ○
+            </div>
+
+            <!-- Sayısal Klavye Prototipi -->
+            <div class="grid grid-cols-3 gap-2 w-56">
+              ${[1,2,3,4,5,6,7,8,9].map(n => `
+                <div class="h-10 bg-slate-800 rounded-lg flex items-center justify-center font-bold text-base text-white border border-slate-700 shadow">${n}</div>
+              `).join('')}
+              <div class="h-10 bg-amber-700 rounded-lg flex items-center justify-center font-bold text-xs text-white">SİL</div>
+              <div class="h-10 bg-slate-800 rounded-lg flex items-center justify-center font-bold text-base text-white border border-slate-700 shadow">0</div>
+              <div class="h-10 bg-emerald-600 rounded-lg flex items-center justify-center font-bold text-xs text-white">GİRİŞ</div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center border-t border-cyan-800/50 pt-2 text-xs">
+            <span class="text-red-400">✕ İptal (Kartı Geri Ver)</span>
+            <span class="text-slate-400">Kart: 1234 •••• •••• 3456</span>
+          </div>
+        `
+      },
+
+      3: {
+        code: "EKRAN #3 (SCR-03)",
+        fr: "FR-03, FR-04 (Hesap Özeti & Döviz Seçimi)",
+        title: "Ana Menü & Döviz Bakiyeleri Ekranı",
+        desc: "Başarılı giriş sonrasında müşterinin tüm para birimlerindeki (TRY, USD, EUR) hesap bakiyelerini ve geçerli kurları bir arada gösteren ana yönetim ekranıdır.",
+        components: [
+          "Müşteri Bilgi Başlığı (Ad Soyad ve Maskeli Kart Numarası)",
+          "3 Cüzdan Kartı: Türk Lirası, USD Hesabı, EUR Hesabı",
+          "Büyük Döviz Çekme Aksiyon Butonları (USD Çek / EUR Çek)",
+          "Kart İade Butonu"
+        ],
+        uxNote: "Kullanıcı hangi hesapta ne kadar döviz olduğunu ve o anki TL değerini tek bakışta algılayabilir.",
+        render: () => `
+          <div class="flex justify-between items-center border-b border-cyan-800/50 pb-2">
+            <span class="text-xs font-bold text-cyan-400">👤 AHMET YILMAZ</span>
+            <span class="text-xs text-slate-400 font-mono">HESAP NO: TR01-1002-USD</span>
+          </div>
+
+          <!-- Hesap Kartları -->
+          <div class="grid grid-cols-3 gap-2 my-2">
+            <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700">
+              <div class="text-[10px] text-slate-400">TRY Hesabı (₺)</div>
+              <div class="text-sm font-bold text-white font-mono mt-0.5">50.000,00 ₺</div>
+            </div>
+            <div class="bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/60 shadow">
+              <div class="text-[10px] text-emerald-400 font-bold">USD Hesabı ($)</div>
+              <div class="text-sm font-bold text-emerald-300 font-mono mt-0.5">2.500,00 $</div>
+              <div class="text-[9px] text-slate-400">Kur: 34.50 ₺</div>
+            </div>
+            <div class="bg-blue-950/40 p-2.5 rounded-xl border border-blue-500/60 shadow">
+              <div class="text-[10px] text-blue-400 font-bold">EUR Hesabı (€)</div>
+              <div class="text-sm font-bold text-blue-300 font-mono mt-0.5">1.800,00 €</div>
+              <div class="text-[9px] text-slate-400">Kur: 37.80 ₺</div>
+            </div>
+          </div>
+
+          <!-- Aksiyon Butonları -->
+          <div class="grid grid-cols-2 gap-3 my-auto">
+            <div class="p-4 bg-gradient-to-r from-emerald-600 to-teal-700 rounded-xl flex items-center justify-between shadow-lg border border-emerald-400/30">
+              <div>
+                <div class="text-sm font-extrabold text-white">USD ($) ÇEK</div>
+                <div class="text-[10px] text-emerald-200">100$, 50$, 20$ Banknotlar</div>
+              </div>
+              <span class="text-2xl">💵</span>
+            </div>
+
+            <div class="p-4 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl flex items-center justify-between shadow-lg border border-blue-400/30">
+              <div>
+                <div class="text-sm font-extrabold text-white">EUR (€) ÇEK</div>
+                <div class="text-[10px] text-blue-200">100€, 50€, 20€ Banknotlar</div>
+              </div>
+              <span class="text-2xl">💶</span>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center border-t border-cyan-800/50 pt-2 text-xs">
+            <div class="px-3 py-1 bg-red-900/60 text-red-200 rounded font-bold">✕ Kart İade</div>
+            <span class="text-slate-400 text-[11px]">ATM Kasa Durumu: Normal</span>
+          </div>
+        `
+      },
+
+      4: {
+        code: "EKRAN #4 (SCR-04)",
+        fr: "FR-05 (Tutar Girişi & Kupür Kontrolü)",
+        title: "Tutar Seçim ve Kupür Bilgilendirme Ekranı",
+        desc: "Kullanıcının hızlı tutarlardan (50, 100, 200, 300, 500) birini seçebileceği veya 'Diğer Tutar' butonuyla kendi belirleyeceği miktarı girebileceği ekrandır.",
+        components: [
+          "Hızlı Tutar Butonları (50$, 100$, 200$, 300$, 500$)",
+          "TL Karşılığı Ön Bilgilendirmesi (Örn: 200$ ≈ 6.900 TL)",
+          "Farklı Tutar Giriş Düğmesi",
+          "Kupür Uyarı Bandı: 'Yalnızca 100, 50 ve 20 banknotları verilebilir'"
+        ],
+        uxNote: "Kullanıcıya hem döviz miktarı hem de yaklaşık yerel para (TL) karşılığı gösterilerek şeffaflık sağlanır.",
+        render: () => `
+          <div class="flex justify-between items-center border-b border-cyan-800/50 pb-2">
+            <div>
+              <span class="text-xs font-bold text-cyan-400">TUTAR SEÇİMİ</span>
+              <span class="text-xs text-white font-bold ml-2">(USD Hesabı)</span>
+            </div>
+            <span class="text-xs text-emerald-400 font-mono">Bakiye: 2.500,00 $</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 my-auto">
+            <div class="py-3 px-4 bg-slate-800 rounded-xl font-bold text-sm flex justify-between items-center border border-slate-700">
+              <span>50 USD</span>
+              <span class="text-xs text-slate-400">≈ 1.725 ₺</span>
+            </div>
+            <div class="py-3 px-4 bg-slate-800 rounded-xl font-bold text-sm flex justify-between items-center border border-slate-700">
+              <span>100 USD</span>
+              <span class="text-xs text-slate-400">≈ 3.450 ₺</span>
+            </div>
+            <div class="py-3 px-4 bg-cyan-700/80 rounded-xl font-bold text-sm flex justify-between items-center border border-cyan-400 shadow">
+              <span>200 USD</span>
+              <span class="text-xs text-cyan-200">≈ 6.900 ₺</span>
+            </div>
+            <div class="py-3 px-4 bg-slate-800 rounded-xl font-bold text-sm flex justify-between items-center border border-slate-700">
+              <span>300 USD</span>
+              <span class="text-xs text-slate-400">≈ 10.350 ₺</span>
+            </div>
+            <div class="py-3 px-4 bg-slate-800 rounded-xl font-bold text-sm flex justify-between items-center border border-slate-700">
+              <span>500 USD</span>
+              <span class="text-xs text-slate-400">≈ 17.250 ₺</span>
+            </div>
+            <div class="py-3 px-4 bg-slate-800 rounded-xl font-bold text-sm flex justify-between items-center border border-slate-700 text-cyan-300">
+              <span>Diğer Tutar Gir</span>
+              <span>✎</span>
+            </div>
+          </div>
+
+          <div class="border-t border-cyan-800/50 pt-2 flex justify-between items-center text-xs">
+            <div class="px-3 py-1 bg-slate-800 text-slate-300 rounded font-bold">← Geri</div>
+            <span class="text-[11px] text-amber-300">⚠ Bu ATM yalnızca 100, 50 ve 20 banknot verir.</span>
+          </div>
+        `
+      },
+
+      5: {
+        code: "EKRAN #5 (SCR-05)",
+        fr: "FR-06, NFR-05 (Kupür Dağıtım Dökümü & Onay)",
+        title: "İşlem Onayı ve Banknot Dağıtım Detayı",
+        desc: "Kullanıcı tutarı girdikten sonra sistemin kasa kontrolünü yapıp optimum banknot kombinasyonunu onay için sunduğu ekrandır.",
+        components: [
+          "Çekilecek Tutar ve Para Birimi Özeti",
+          "Kupür Dağılım Kartı (Örn: 270 USD için 2x100$ + 1x50$ + 1x20$)",
+          "Uygulanan Satış Kuru ve Toplam TL Değeri",
+          "Makbuz İstiyor Musunuz? Seçim Butonu",
+          "Yeşil 'ONAYLA' ve Kırmızı 'İPTAL' Butonları"
+        ],
+        uxNote: "Kullanıcı ATM'den eline tam olarak kaç adet ve hangi kupürde para geçeceğini önceden görerek onay verir.",
+        render: () => `
+          <div class="flex justify-between items-center border-b border-cyan-800/50 pb-2">
+            <span class="text-xs font-bold text-cyan-400">İŞLEM ONAYI</span>
+            <span class="text-xs text-emerald-400 font-mono">Bakiye Yeterli ✓</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center my-auto w-full max-w-md mx-auto">
+            <div class="text-2xl font-extrabold text-white mb-2">270,00 USD ÇEKİLECEK</div>
+            
+            <!-- Banknot Dağıtım Kartı -->
+            <div class="w-full bg-slate-900/90 border border-emerald-500/50 rounded-xl p-3 mb-3">
+              <div class="text-[10px] text-emerald-400 font-bold uppercase mb-2">Verilecek Banknotlar (Kupür Dağılımı):</div>
+              <div class="flex justify-center gap-2">
+                <span class="px-2.5 py-1 bg-emerald-950 border border-emerald-500 rounded text-xs font-bold font-mono">2x 100 $</span>
+                <span class="px-2.5 py-1 bg-emerald-950 border border-emerald-500 rounded text-xs font-bold font-mono">1x 50 $</span>
+                <span class="px-2.5 py-1 bg-emerald-950 border border-emerald-500 rounded text-xs font-bold font-mono">1x 20 $</span>
+              </div>
+            </div>
+
+            <!-- Bilgilendirme -->
+            <div class="w-full text-xs text-slate-300 space-y-1 mb-4 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+              <div class="flex justify-between"><span>Uygulanan Kur:</span> <span class="font-bold text-white">1 USD = 34.50 TRY</span></div>
+              <div class="flex justify-between"><span>TL Karşılığı:</span> <span class="font-bold text-cyan-300">9.315,00 TL</span></div>
+              <div class="flex justify-between"><span>Kalan Bakiye:</span> <span class="font-bold text-emerald-400">2.230,00 USD</span></div>
+              <div class="flex justify-between"><span>Makbuz:</span> <span class="text-emerald-400">Basılacak (Evet)</span></div>
+            </div>
+
+            <!-- Onay Butonları -->
+            <div class="flex gap-4 w-full">
+              <div class="flex-1 py-2.5 bg-red-900/80 text-red-200 text-center rounded-xl font-bold text-xs">İptal Et</div>
+              <div class="flex-1 py-2.5 bg-emerald-600 text-white text-center rounded-xl font-bold text-xs shadow-lg">ONAYLA VE VER</div>
+            </div>
+          </div>
+
+          <div class="border-t border-cyan-800/50 pt-2 text-right text-[11px] text-slate-400">
+            2-Phase Commit Güvencesi Altında
+          </div>
+        `
+      },
+
+      6: {
+        code: "EKRAN #6 (SCR-06)",
+        fr: "FR-06, FR-07 (Nakit Dağıtımı & Makbuz Basımı)",
+        title: "Nakit Teslimi ve Makbuz Ekranı",
+        desc: "İşlem başarıyla tamamlandığında paranın nakit kapağından verildiğini ve makbuzun yazıcıdan basıldığını bildiren bitiş ekranıdır.",
+        components: [
+          "Büyük Başarı İkonu ve 'LÜTFEN PARANIZI ALINIZ' Mesajı",
+          "İşlem Özeti (Çekilen Tutar, Güncel Yeni Bakiye)",
+          "Makbuz Basıldı Bildirimi ve Referans Numarası (TX-10001)",
+          "30 Saniye Zaman Aşımı Sayacı (Parayı Unutma Emniyeti)",
+          "Tamamla / Kartı Al Butonu"
+        ],
+        uxNote: "Müşteri parayı 30 saniye içinde almazsa güvenlik gereği para hazneye geri çekilir (Retract) ve işlem iptal edilir.",
+        render: () => `
+          <div class="flex justify-between items-center border-b border-cyan-800/50 pb-2">
+            <span class="text-xs font-bold text-emerald-400">İŞLEM TAMAMLANDI</span>
+            <span class="text-xs text-amber-400 font-mono">⏱ Kalan Süre: 28s</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center my-auto text-center px-4">
+            <div class="w-16 h-16 bg-emerald-950 border-2 border-emerald-400 rounded-full flex items-center justify-center text-3xl mb-3 text-emerald-400 animate-pulse">
+              ✓
+            </div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-white mb-1">LÜTFEN PARANIZI VE MAKBUZUNUZU ALINIZ</h2>
+            <p class="text-xs text-slate-300 mb-3">Banknotlar nakit bölmesinden dışarı verilmiştir.</p>
+
+            <div class="p-3 bg-slate-900 border border-slate-700 rounded-xl w-full max-w-xs text-xs mb-3 space-y-1">
+              <div class="flex justify-between"><span>Verilen Tutar:</span> <span class="font-bold text-white font-mono">270,00 USD</span></div>
+              <div class="flex justify-between"><span>Yeni Bakiye:</span> <span class="font-bold text-emerald-400 font-mono">2.230,00 USD</span></div>
+              <div class="flex justify-between"><span>Referans No:</span> <span class="font-mono text-cyan-400">TX-10001</span></div>
+            </div>
+
+            <div class="px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-lg text-xs shadow-lg">
+              KARTIMI VER VE BİTİR
+            </div>
+          </div>
+
+          <div class="border-t border-cyan-800/50 pt-2 text-center text-[11px] text-slate-400">
+            Pazarlar Bank'ı tercih ettiğiniz için teşekkür ederiz.
+          </div>
+        `
+      },
+
+      7: {
+        code: "EKRAN #7 (SCR-07)",
+        fr: "NFR-01, NFR-03 (Güvenlik, Hata & Rollback Durumları)",
+        title: "İstisna ve Hata Durumları (Exception UI)",
+        desc: "Sistemde oluşabilecek olası 3 ana hata durumunu (Kart Bloke, Yetersiz Bakiye ve Mekanik Para Sıkışması Rollback) temsil eden arayüzdür.",
+        components: [
+          "Hata Durum Göstergesi (Kart Bloke, Yetersiz Kasa, Rollback)",
+          "Açık ve Net Hata Mesajı",
+          "Kullanıcıya Yapılması Gereken Yönlendirme (Şubeye Başvurun / Bakiye Değiştirin)",
+          "Sıfır Kayıp Bildirimi (Hesabınızdan para eksilmemiştir garantisi)"
+        ],
+        uxNote: "Kullanıcıya panik yaratmadan 'Hesabınızdan para düşülmemiştir' güvencesi açıkça verilir.",
+        render: () => `
+          <div class="flex justify-between items-center border-b border-red-800/50 pb-2">
+            <span class="text-xs font-bold text-red-400">GÜVENLİK & ARIZA BİLDİRİMİ</span>
+            <span class="text-xs text-amber-400 font-mono">HATA KODU: ERR-403</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center my-auto text-center px-4">
+            <div class="w-16 h-16 bg-red-950/80 border-2 border-red-500 rounded-full flex items-center justify-center text-3xl mb-3 text-red-400">
+              ⛔
+            </div>
+            <h2 class="text-lg font-extrabold text-red-400 mb-1">KARTINIZ BLOKE EDİLMİŞTİR!</h2>
+            <p class="text-xs text-slate-300 max-w-sm mb-4">
+              Üst üste 3 kez hatalı PIN girildiği için kartınız güvenlik tedbiri olarak bloke edilmiştir.
+            </p>
+
+            <!-- Alternatif Hata Kutusu (Rollback Bilgisi) -->
+            <div class="w-full max-w-sm p-3 bg-amber-950/40 border border-amber-500/50 rounded-xl text-left text-xs mb-4">
+              <div class="font-bold text-amber-300 mb-1">🛡️ Donanım Arızası (Rollback) Bilgisi:</div>
+              <p class="text-amber-100/90 text-[11px] leading-relaxed">
+                Mekanik sıkışma gibi durumlarda sistem işlemi otomatik iptal eder (ROLLBACK). Hesabınızdaki döviz bakiyesinden 1 cent dahi kesilmez.
+              </p>
+            </div>
+
+            <div class="px-5 py-2 bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs font-bold">
+              Kartınızı İade Alınız
+            </div>
+          </div>
+
+          <div class="border-t border-red-800/50 pt-2 text-center text-[11px] text-slate-400">
+            Müşteri Hizmetleri: 0850 123 45 67
+          </div>
+        `
+      }
+    };
+
+    function switchScreen(index) {
+      currentScreenIndex = index;
+      const data = screens[index];
+
+      // Ekran içeriğini güncelle
+      document.getElementById('screenContainer').innerHTML = data.render();
+      document.getElementById('screenIndicator').innerText = `Ekran ${index} / 7`;
+
+      // Spesifikasyon bilgilerini güncelle
+      document.getElementById('specCode').innerText = data.code;
+      document.getElementById('specFR').innerText = data.fr;
+      document.getElementById('specTitle').innerText = data.title;
+      document.getElementById('specDesc').innerText = data.desc;
+      document.getElementById('specUxNote').innerText = data.uxNote;
+
+      const compList = document.getElementById('specComponents');
+      compList.innerHTML = data.components.map(c => `<li>${c}</li>`).join('');
+
+      // Tab butonlarının stillerini güncelle
+      for (let i = 1; i <= 7; i++) {
+        const tab = document.getElementById(`tab${i}`);
+        if (i === index) {
+          tab.className = "px-3 py-1.5 text-xs font-bold rounded-lg transition bg-cyan-500 text-slate-950";
+        } else {
+          tab.className = "px-3 py-1.5 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:text-white";
+        }
+      }
+    }
+
+    function prevScreen() {
+      if (currentScreenIndex > 1) {
+        switchScreen(currentScreenIndex - 1);
+      } else {
+        switchScreen(7);
+      }
+    }
+
+    function nextScreen() {
+      if (currentScreenIndex < 7) {
+        switchScreen(currentScreenIndex + 1);
+      } else {
+        switchScreen(1);
+      }
+    }
+
+    // Başlangıç yüklemesi
+    switchScreen(1);
+  </script>
+</body>
+</html>

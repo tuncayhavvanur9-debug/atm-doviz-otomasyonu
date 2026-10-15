@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATM Döviz Çekme Simülatörü</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes pulseSlot {
+      0%, 100% { box-shadow: 0 0 10px #10b981; }
+      50% { box-shadow: 0 0 25px #059669; }
+    }
+    .slot-glow { animation: pulseSlot 1.5s infinite; }
+    @keyframes slideDownReceipt {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .receipt-anim { animation: slideDownReceipt 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes cashDispense {
+      0% { transform: translateY(40px) scale(0.9); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .cash-anim { animation: cashDispense 0.6s ease-out forwards; }
+    .screen-crt {
+      background: linear-gradient(180deg, #091e3a 0%, #06152b 100%);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 flex flex-col items-center justify-center font-sans antialiased select-none">
+
+  <!-- Üst Bilgi Başlığı -->
+  <div class="text-center mb-4 max-w-2xl">
+    <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-950/80 border border-emerald-500/40 rounded-full text-emerald-400 text-xs font-semibold mb-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> CANLI SİMÜLASYON SİSTEMİ (v2.0)
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">ATM Döviz Çekme Otomasyonu</h1>
+    <p class="text-xs sm:text-sm text-slate-400 mt-1">Dokunmatik ekranı, donanım kasetlerini ve mekanik para dağıtıcısını test edin.</p>
+  </div>
+
+  <!-- ATM Ana Kabin Çerçevesi -->
+  <div class="w-full max-w-4xl bg-slate-800 rounded-3xl border-4 border-slate-700 p-4 sm:p-8 shadow-2xl shadow-cyan-950/40 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- SOL: ATM Dokunmatik Ekran Alanı (8 Kolon) -->
+    <div class="lg:col-span-8 flex flex-col">
+      
+      <!-- ATM Üst Bant & Kamera -->
+      <div class="bg-slate-900 rounded-t-2xl p-3 border-x border-t border-slate-700 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+          <span class="text-xs font-bold tracking-wider text-slate-400 ml-2">PAZARLAR BANK | ATM-001</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+            <span class="w-2 h-2 rounded-full bg-green-400"></span> Çevrimiçi
+          </div>
+          <!-- Kamera Sensörü -->
+          <div class="w-3 h-3 rounded-full bg-slate-950 border border-slate-600"></div>
+        </div>
+      </div>
+
+      <!-- Dokunmatik Ekran İçeriği -->
+      <div id="atmScreen" class="screen-crt border-x border-b border-slate-700 rounded-b-2xl p-5 min-h-[460px] flex flex-col justify-between relative overflow-hidden text-slate-100">
+        
+        <!-- Dinamik Ekran Katmanı JavaScript Tarafından Doldurulacak -->
+        <div id="screenContent" class="h-full flex flex-col justify-between">
+          <!-- JS Render -->
+        </div>
+
+      </div>
+
+      <!-- Ekran Altı Donanım Para Dağıtım Bölmesi (Cash Dispenser Tray) -->
+      <div class="mt-4 bg-slate-950 p-4 rounded-2xl border-2 border-slate-700 flex flex-col items-center">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <span>💵 NAKİT DAĞITICI BÖLMESİ (CASH DISPENSER)</span>
+        </div>
+        <div id="dispenserSlot" class="w-full h-14 bg-black rounded-lg mt-2 border-2 border-slate-800 flex items-center justify-center relative overflow-hidden transition-all duration-300">
+          <span id="dispenserText" class="text-xs text-slate-600 font-mono">Kapak Kapalı</span>
+          <div id="dispensedCashContainer" class="hidden absolute inset-0 bg-emerald-900/40 border border-emerald-500 flex items-center justify-center gap-3 px-4 cash-anim">
+            <!-- Banknotlar burada görünecek -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SAĞ: Donanım Girişleri & Simülasyon Kontrolleri (4 Kolon) -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+      
+      <!-- 1. KART GİRİŞ YUVASI (CARD SLOT) -->
+      <div class="bg-slate-900 p-4 rounded-2xl border border-slate-700 shadow-md">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-bold text-slate-300">💳 KART YUVASI</span>
+          <span id="cardStatusBadge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-medium">Boş</span>
+        </div>
+        
+        <div id="cardSlotBox" class="w-full h-8 bg-black rounded border-2 border-slate-700 flex items-center justify-center relative transition-all duration-300">
+          <div id="cardSlotLight" class="w-16 h-1.5 bg-emerald-500 rounded-full slot-glow"></div>
+        </div>
+
+        <div class="mt-3 flex flex-col gap-2">
+          <button id="btnInsertCard" onclick="handleCardAction()" class="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-bold transition shadow">
+            Kartı Tak (Ahmet Yılmaz)
+          </button>
+          <div class="text-[10px] text-slate-400 text-center font-mono">
+            Kart: 1234 •••• •••• 3456 | PIN: 1234
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. MAKBUZ YAZICI YUVASI (RECEIPT PRINTER) -->
+      <div class="bg-slate-900 p-4 rounded-2xl border border-slate-700 shadow-md">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-bold text-slate-300">🧾 MAKBUZ YAZICI</span>
+          <span id="receiptBadge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-medium">Beklemede</span>
+        </div>
+        <div class="w-full h-3 bg-black rounded border border-slate-700 mb-2"></div>
+        
+        <!-- Çıkan Makbuz Önizlemesi -->
+        <div id="receiptContainer" class="hidden">
+          <div class="bg-amber-50 text-slate-900 p-3 rounded-lg shadow-lg font-mono text-[11px] receipt-anim border border-amber-200">
+            <div id="receiptContent"></div>
+            <button onclick="takeReceipt()" class="mt-2 w-full py-1 bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold rounded text-[10px] transition">
+              Makbuzu Al ✖
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. ÖZEL TEST PANELİ (TEST PANEL - NFR TESTLERİ) -->
+      <div class="bg-slate-900/90 p-4 rounded-2xl border border-cyan-900/50 shadow-md">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold text-cyan-400">⚡ SİSTEM & ARIZA TESTLERİ</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mb-3">Fonksiyonel olmayan güvenilirlik ve hata senaryolarını test edin:</p>
+        
+        <div class="flex flex-col gap-2">
+          <!-- Donanım Arızası / Rollback Switch -->
+          <label class="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+            <div class="flex flex-col">
+              <span class="text-xs font-medium text-amber-300">Mekanik Sıkışma (Cash Jam)</span>
+              <span class="text-[10px] text-slate-500">Rollback bakiye korumasını test eder</span>
+            </div>
+            <input type="checkbox" id="chkHardwareError" class="w-4 h-4 text-amber-500 rounded focus:ring-0">
+          </label>
+
+          <!-- ATM Kasa Durumu Bilgisi -->
+          <div class="p-2 bg-slate-950 rounded-lg border border-slate-800 text-[11px] text-slate-300">
+            <div class="font-semibold text-slate-400 mb-1">ATM Kasa Banknot Stoku:</div>
+            <div class="flex justify-between"><span>USD ($):</span> <span id="kasaUsd" class="font-mono text-emerald-400">8.000 $ (100, 50, 20)</span></div>
+            <div class="flex justify-between"><span>EUR (€):</span> <span id="kasaEur" class="font-mono text-blue-400">6.500 € (100, 50, 20)</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- JAVASCRIPT MOTORU & İŞ MANTIĞI -->
+  <script>
+    // ========================================================================
+    // SİSTEM VERİLERİ & DURUMU (STATE MANAGEMENT)
+    // ========================================================================
+    const state = {
+      language: 'TR', // 'TR', 'EN', 'DE'
+      screen: 'WELCOME', // 'WELCOME', 'PIN', 'MENU', 'SELECT_AMOUNT', 'CUSTOM_AMOUNT', 'PROCESSING', 'SUCCESS', 'BLOCKED'
+      cardInserted: false,
+      currentPin: '',
+      failedAttempts: 0,
+      isBlocked: false,
+      selectedCurrency: 'USD',
+      enteredAmount: 0,
+      customer: {
+        name: 'Ahmet Yılmaz',
+        cardNumber: '1234567890123456',
+        pin: '1234',
+        accounts: {
+          TRY: 50000.00,
+          USD: 2500.00,
+          EUR: 1800.00
+        }
+      },
+      rates: {
+        USD: 34.50,
+        EUR: 37.80,
+        TRY: 1.00
+      },
+      atmInventory: {
+        USD: { 100: 50, 50: 40, 20: 50 },
+        EUR: { 100: 40, 50: 30, 20: 50 }
+      }
+    };
+
+    // Çoklu Dil Sözlüğü (i18n Dictionary)
+    const i18n = {
+      TR: {
+        welcomeTitle: "LÜTFEN İŞLEM YAPMAK İÇİN KARTINIZI TAKINIZ",
+        selectLang: "Dil Seçiniz",
+        insertCardHint: "Sağ taraftaki 'Kartı Tak' butonuna tıklayarak kartınızı yerleştirin.",
+        enterPin: "LÜTFEN 4 HANELİ ŞİFRENİZİ GİRİNİZ",
+        pinWarn: "Güvenliğiniz için şifrenizi kimseyle paylaşmayınız.",
+        remainingAttempt: "Kalan Deneme Hakkı",
+        cardBlocked: "KARTINIZ 3 KEZ HATALI ŞİFRE NEDENİYLE BLOKE EDİLMİŞTİR!",
+        contactBranch: "Lütfen en yakın banka şubemiz ile iletişime geçiniz.",
+        mainMenu: "ANA İŞLEM MENÜSÜ",
+        welcomeUser: "Hoş Geldiniz",
+        withdrawUsd: "USD ($) Çek",
+        withdrawEur: "EUR (€) Çek",
+        viewBalance: "Bakiye İncele",
+        returnCard: "Kart İade",
+        selectAmountTitle: "ÇEKMEK İSTEDİĞİNİZ TUTARI SEÇİNİZ",
+        currRate: "Güncel Kur",
+        availBalance: "Kullanılabilir Bakiye",
+        customAmount: "Diğer Tutar",
+        back: "Geri",
+        enterCustomAmount: "ÇEKİLMEK İSTENEN TUTARI GİRİNİZ",
+        confirm: "Onayla",
+        clear: "Temizle",
+        cancel: "İptal",
+        noteBills: "ATM yalnızca 100, 50 ve 20'lik banknot vermektedir.",
+        processing: "İşleminiz Yapılıyor...",
+        pleaseWait: "Bakiye ve ATM kasa rezervi kontrol ediliyor, lütfen bekleyiniz.",
+        takeCashTitle: "LÜTFEN PARANIZI ALINIZ",
+        takeCashDesc: "Banknotlar nakit bölmesinden teslim edildi.",
+        receiptPrinted: "Bilgi fişiniz yazıcıdan basıldı.",
+        finish: "İşlemi Tamamla",
+        insufficientBalance: "Yetersiz bakiye! Hesabınızda yeterli döviz bulunmamaktadır.",
+        insufficientCash: "ATM kasasında bu tutar için uygun banknot bulunmamaktadır.",
+        denomError: "Girdiğiniz tutar 20, 50 veya 100 banknot katlarına uygun değil!",
+        jamError: "KRİTİK HATA: Nakit dağıtıcıda sıkışma oldu! ROLLBACK çalıştı, hesabınızdan para düşülmedi."
+      },
+      EN: {
+        welcomeTitle: "PLEASE INSERT YOUR CARD TO BEGIN",
+        selectLang: "Select Language",
+        insertCardHint: "Click 'Insert Card' on the right panel to proceed.",
+        enterPin: "PLEASE ENTER YOUR 4-DIGIT PIN",
+        pinWarn: "For your safety, do not share your PIN with anyone.",
+        remainingAttempt: "Remaining Attempts",
+        cardBlocked: "YOUR CARD HAS BEEN BLOCKED DUE TO 3 INVALID PIN ATTEMPTS!",
+        contactBranch: "Please contact your nearest branch.",
+        mainMenu: "MAIN TRANSACTION MENU",
+        welcomeUser: "Welcome",
+        withdrawUsd: "Withdraw USD ($)",
+        withdrawEur: "Withdraw EUR (€)",
+        viewBalance: "View Balances",
+        returnCard: "Eject Card",
+        selectAmountTitle: "SELECT WITHDRAWAL AMOUNT",
+        currRate: "Current Rate",
+        availBalance: "Available Balance",
+        customAmount: "Other Amount",
+        back: "Back",
+        enterCustomAmount: "ENTER AMOUNT TO WITHDRAW",
+        confirm: "Confirm",
+        clear: "Clear",
+        cancel: "Cancel",
+        noteBills: "This ATM dispenses 100, 50, and 20 bills only.",
+        processing: "Processing Your Transaction...",
+        pleaseWait: "Checking account balance and cash inventory, please wait.",
+        takeCashTitle: "PLEASE TAKE YOUR CASH",
+        takeCashDesc: "Cash dispensed successfully from tray.",
+        receiptPrinted: "Your receipt has been printed.",
+        finish: "Done",
+        insufficientBalance: "Insufficient funds in your account.",
+        insufficientCash: "ATM does not have suitable banknotes.",
+        denomError: "Amount cannot be dispensed with 20, 50, 100 bills!",
+        jamError: "HARDWARE FAILURE: Cash jam detected! ROLLBACK executed, balance untouched."
+      },
+      DE: {
+        welcomeTitle: "BITTE KARTE EINSTECKEN",
+        selectLang: "Sprache wählen",
+        insertCardHint: "Klicken Sie rechts auf 'Karte einstecken'.",
+        enterPin: "BITTE GEBEN SIE IHRE 4-STELLIGE PIN EIN",
+        pinWarn: "Geben Sie Ihre PIN niemals an Dritte weiter.",
+        remainingAttempt: "Verbleibende Versuche",
+        cardBlocked: "IHRE KARTE WURDE NACH 3 FEHLVERSUCHEN GESPERRT!",
+        contactBranch: "Bitte wenden Sie sich an Ihre Bankfiliale.",
+        mainMenu: "HAUPTMENÜ",
+        welcomeUser: "Willkommen",
+        withdrawUsd: "USD ($) Abheben",
+        withdrawEur: "EUR (€) Abheben",
+        viewBalance: "Kontostand",
+        returnCard: "Karte Auswerfen",
+        selectAmountTitle: "BETRAG WÄHLEN",
+        currRate: "Aktueller Kurs",
+        availBalance: "Verfügbares Guthaben",
+        customAmount: "Anderer Betrag",
+        back: "Zurück",
+        enterCustomAmount: "WUNSCHBETRAG EINGEBEN",
+        confirm: "Bestätigen",
+        clear: "Löschen",
+        cancel: "Abbrechen",
+        noteBills: "Geldautomat gibt nur 100, 50 und 20 Scheine aus.",
+        processing: "Transaktion wird verarbeitet...",
+        pleaseWait: "Kontoguthaben und Kassenbestand werden geprüft.",
+        takeCashTitle: "BITTE ENTNEHMEN SIE IHR GELD",
+        takeCashDesc: "Geldscheine wurden im Ausgabefach bereitgestellt.",
+        receiptPrinted: "Ihr Beleg wurde gedruckt.",
+        finish: "Fertig",
+        insufficientBalance: "Unzureichendes Guthaben auf Ihrem Konto.",
+        insufficientCash: "Keine passenden Scheine im Automaten.",
+        denomError: "Betrag muss durch 20, 50 oder 100 teilbar sein!",
+        jamError: "GERÄTEFEHLER: Stau erkannt! ROLLBACK aktiv, kein Geld abgezogen."
+      }
+    };
+
+    function t(key) {
+      return (i18n[state.language] && i18n[state.language][key]) || i18n['TR'][key] || key;
+    }
+
+    // ========================================================================
+    // EKRAN RENDER FONKSİYONU
+    // ========================================================================
+    function renderScreen() {
+      const container = document.getElementById('screenContent');
+      
+      // 1. HOŞ GELDİNİZ EKRANI
+      if (state.screen === 'WELCOME') {
+        container.innerHTML = `
+          <div class="flex justify-between items-center border-b border-cyan-800/40 pb-3">
+            <span class="text-xs font-bold text-cyan-400">PAZARLAR MYO ATM</span>
+            <div class="flex gap-2">
+              <button onclick="setLanguage('TR')" class="px-2 py-1 text-xs rounded font-bold ${state.language === 'TR' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-slate-300'}">🇹🇷 TR</button>
+              <button onclick="setLanguage('EN')" class="px-2 py-1 text-xs rounded font-bold ${state.language === 'EN' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-slate-300'}">🇬🇧 EN</button>
+              <button onclick="setLanguage('DE')" class="px-2 py-1 text-xs rounded font-bold ${state.language === 'DE' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-slate-300'}">🇩🇪 DE</button>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center justify-center my-auto text-center px-4">
+            <div class="w-20 h-20 rounded-full bg-cyan-950 border-2 border-cyan-400 flex items-center justify-center mb-4 text-3xl shadow-lg shadow-cyan-500/20">
+              💳
+            </div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-white mb-2">${t('welcomeTitle')}</h2>
+            <p class="text-xs sm:text-sm text-cyan-300 max-w-md">${t('insertCardHint')}</p>
+          </div>
+
+          <div class="border-t border-cyan-800/40 pt-3 flex justify-between items-center text-[11px] text-slate-400">
+            <span>Döviz Kurları: 1$ = ${state.rates.USD.toFixed(2)} ₺ | 1€ = ${state.rates.EUR.toFixed(2)} ₺</span>
+            <span class="text-emerald-400">● Güvenli Bağlantı (TLS 1.3)</span>
+          </div>
+        `;
+      }
+
+      // 2. PIN GİRİŞ EKRANI
+      else if (state.screen === 'PIN') {
+        const dots = '● '.repeat(state.currentPin.length) + '○ '.repeat(4 - state.currentPin.length);
+        container.innerHTML = `
+          <div class="flex justify-between items-center border-b border-cyan-800/40 pb-2">
+            <span class="text-xs font-bold text-cyan-400">GÜVENLİ GİRİŞ</span>
+            <span class="text-xs text-amber-400">${t('remainingAttempt')}: ${3 - state.failedAttempts}</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center my-auto">
+            <h3 class="text-sm sm:text-base font-bold text-white mb-1">${t('enterPin')}</h3>
+            <p class="text-[11px] text-slate-400 mb-4">${t('pinWarn')}</p>
+            
+            <!-- Şifre Maskeleme Kutusu -->
+            <div class="bg-slate-950 border-2 border-cyan-500 px-8 py-3 rounded-xl text-2xl tracking-widest text-cyan-300 font-mono mb-4 shadow-inner">
+              ${dots}
+            </div>
+
+            <!-- Sayısal Dokunmatik Tuş Takımı -->
+            <div class="grid grid-cols-3 gap-2 w-56 sm:w-64">
+              ${[1,2,3,4,5,6,7,8,9].map(num => `
+                <button onclick="pressPin('${num}')" class="h-11 bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 rounded-lg font-bold text-base transition border border-slate-700 shadow">${num}</button>
+              `).join('')}
+              <button onclick="clearPin()" class="h-11 bg-amber-600/80 hover:bg-amber-600 rounded-lg font-bold text-xs transition">${t('clear')}</button>
+              <button onclick="pressPin('0')" class="h-11 bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 rounded-lg font-bold text-base transition border border-slate-700 shadow">0</button>
+              <button onclick="submitPin()" class="h-11 bg-emerald-600/90 hover:bg-emerald-600 rounded-lg font-bold text-xs transition">${t('confirm')}</button>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center border-t border-cyan-800/40 pt-2 text-[11px]">
+            <button onclick="ejectCard()" class="text-red-400 hover:underline">✕ ${t('cancel')}</button>
+            <span class="text-slate-500">Test Şifresi: 1234</span>
+          </div>
+        `;
+      }
+
+      // 3. KART BLOKE EKRANI
+      else if (state.screen === 'BLOCKED') {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center my-auto text-center p-6">
+            <div class="w-16 h-16 rounded-full bg-red-950 border-2 border-red-500 flex items-center justify-center text-3xl mb-4 text-red-400">
+              ⛔
+            </div>
+            <h2 class="text-lg font-extrabold text-red-400 mb-2">${t('cardBlocked')}</h2>
+            <p class="text-xs text-slate-300 max-w-sm mb-6">${t('contactBranch')}</p>
+            <button onclick="resetSimulator()" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold border border-slate-600">
+              Simülatörü Sıfırla
+            </button>
+          </div>
+        `;
+      }
+
+      // 4. ANA MENÜ EKRANI
+      else if (state.screen === 'MENU') {
+        container.innerHTML = `
+          <div class="flex justify-between items-center border-b border-cyan-800/40 pb-2">
+            <span class="text-xs font-bold text-cyan-400">👤 ${t('welcomeUser')}, ${state.customer.name}</span>
+            <span class="text-xs text-slate-400 font-mono">1234 •••• •••• 3456</span>
+          </div>
+
+          <!-- Hesap ve Bakiye Kartları -->
+          <div class="grid grid-cols-3 gap-2 my-2">
+            <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700">
+              <div class="text-[10px] text-slate-400">Türk Lirası (TRY)</div>
+              <div class="text-sm font-bold text-white font-mono mt-0.5">${state.customer.accounts.TRY.toLocaleString('tr-TR', {minimumFractionDigits: 2})} ₺</div>
+            </div>
+            <div class="bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/50">
+              <div class="text-[10px] text-emerald-400 font-semibold">USD Hesabı ($)</div>
+              <div class="text-sm font-bold text-emerald-300 font-mono mt-0.5">${state.customer.accounts.USD.toLocaleString('en-US', {minimumFractionDigits: 2})} $</div>
+              <div class="text-[9px] text-slate-400">Kur: ${state.rates.USD.toFixed(2)} ₺</div>
+            </div>
+            <div class="bg-blue-950/40 p-2.5 rounded-xl border border-blue-500/50">
+              <div class="text-[10px] text-blue-400 font-semibold">EUR Hesabı (€)</div>
+              <div class="text-sm font-bold text-blue-300 font-mono mt-0.5">${state.customer.accounts.EUR.toLocaleString('de-DE', {minimumFractionDigits: 2})} €</div>
+              <div class="text-[9px] text-slate-400">Kur: ${state.rates.EUR.toFixed(2)} ₺</div>
+            </div>
+          </div>
+
+          <!-- Ana İşlem Butonları -->
+          <div class="grid grid-cols-2 gap-3 my-auto">
+            <button onclick="startWithdrawal('USD')" class="p-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 rounded-xl flex items-center justify-between shadow-lg transition">
+              <div class="text-left">
+                <div class="text-sm font-extrabold text-white">${t('withdrawUsd')}</div>
+                <div class="text-[10px] text-emerald-200">100$, 50$, 20$ Banknotlar</div>
+              </div>
+              <span class="text-2xl">💵</span>
+            </button>
+
+            <button onclick="startWithdrawal('EUR')" class="p-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 rounded-xl flex items-center justify-between shadow-lg transition">
+              <div class="text-left">
+                <div class="text-sm font-extrabold text-white">${t('withdrawEur')}</div>
+                <div class="text-[10px] text-blue-200">100€, 50€, 20€ Banknotlar</div>
+              </div>
+              <span class="text-2xl">💶</span>
+            </button>
+          </div>
+
+          <div class="flex justify-between items-center border-t border-cyan-800/40 pt-2 text-xs">
+            <button onclick="ejectCard()" class="px-3 py-1.5 bg-red-900/60 hover:bg-red-800 text-red-200 rounded-lg font-bold transition">
+              ✕ ${t('returnCard')}
+            </button>
+            <span class="text-[11px] text-slate-400">ATM Nakit Durumu: Hazır</span>
+          </div>
+        `;
+      }
+
+      // 5. TUTAR SEÇİM EKRANI
+      else if (state.screen === 'SELECT_AMOUNT') {
+        const curr = state.selectedCurrency;
+        const sym = curr === 'USD' ? '$' : '€';
+        const bal = state.customer.accounts[curr];
+        const amounts = [50, 100, 200, 300, 500];
+
+        container.innerHTML = `
+          <div class="flex justify-between items-center border-b border-cyan-800/40 pb-2">
+            <div>
+              <span class="text-xs font-bold text-cyan-400">${t('selectAmountTitle')}</span>
+              <span class="text-xs text-white font-bold ml-2">(${curr})</span>
+            </div>
+            <div class="text-xs text-emerald-400 font-mono">Bakiye: ${bal.toLocaleString()} ${sym}</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 my-auto">
+            ${amounts.map(amt => `
+              <button onclick="processWithdraw(${amt})" class="py-3 px-4 bg-slate-800 hover:bg-cyan-700 rounded-xl font-bold text-base transition flex justify-between items-center border border-slate-700">
+                <span>${amt} ${sym}</span>
+                <span class="text-xs text-slate-400">≈ ${(amt * state.rates[curr]).toFixed(0)} ₺</span>
+              </button>
+            `).join('')}
+
+            <button onclick="openCustomAmount()" class="py-3 px-4 bg-slate-800 hover:bg-cyan-700 rounded-xl font-bold text-sm transition flex justify-between items-center border border-slate-700 text-cyan-300">
+              <span>${t('customAmount')}</span>
+              <span>✎</span>
+            </button>
+          </div>
+
+          <div class="border-t border-cyan-800/40 pt-2 flex justify-between items-center text-xs">
+            <button onclick="changeScreen('MENU')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold">
+              ← ${t('back')}
+            </button>
+            <span class="text-[11px] text-amber-300">⚠ ${t('noteBills')}</span>
+          </div>
+        `;
+      }
+
+      // 6. DİĞER TUTAR GİRİŞ EKRANI
+      else if (state.screen === 'CUSTOM_AMOUNT') {
+        const curr = state.selectedCurrency;
+        const sym = curr === 'USD' ? '$' : '€';
+        container.innerHTML = `
+          <div class="flex justify-between items-center border-b border-cyan-800/40 pb-2">
+            <span class="text-xs font-bold text-cyan-400">${t('enterCustomAmount')}</span>
+            <span class="text-xs text-emerald-400 font-mono">Maks: ${state.customer.accounts[curr].toLocaleString()} ${sym}</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center my-auto">
+            <div class="text-3xl font-mono font-extrabold text-cyan-300 mb-2">
+              ${state.enteredAmount || 0} ${sym}
+            </div>
+            <p class="text-[11px] text-amber-300 mb-4">${t('noteBills')}</p>
+
+            <!-- Numpad -->
+            <div class="grid grid-cols-3 gap-2 w-56">
+              ${[1,2,3,4,5,6,7,8,9].map(n => `
+                <button onclick="pressAmountDigit(${n})" class="h-10 bg-slate-800 hover:bg-slate-700 rounded font-bold">${n}</button>
+              `).join('')}
+              <button onclick="clearAmount()" class="h-10 bg-amber-700 hover:bg-amber-600 rounded font-bold text-xs">${t('clear')}</button>
+              <button onclick="pressAmountDigit(0)" class="h-10 bg-slate-800 hover:bg-slate-700 rounded font-bold">0</button>
+              <button onclick="processWithdraw(state.enteredAmount)" class="h-10 bg-emerald-600 hover:bg-emerald-500 rounded font-bold text-xs">${t('confirm')}</button>
+            </div>
+          </div>
+
+          <div class="border-t border-cyan-800/40 pt-2 flex justify-between items-center text-xs">
+            <button onclick="changeScreen('SELECT_AMOUNT')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold">
+              ← ${t('back')}
+            </button>
+          </div>
+        `;
+      }
+
+      // 7. İŞLENİYOR EKRANI
+      else if (state.screen === 'PROCESSING') {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center my-auto text-center">
+            <div class="w-16 h-16 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <h3 class="text-base font-bold text-white mb-1">${t('processing')}</h3>
+            <p class="text-xs text-cyan-300">${t('pleaseWait')}</p>
+          </div>
+        `;
+      }
+
+      // 8. BAŞARILI / PARAYI ALINIZ EKRANI
+      else if (state.screen === 'SUCCESS') {
+        const curr = state.selectedCurrency;
+        const sym = curr === 'USD' ? '$' : '€';
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center my-auto text-center px-4">
+            <div class="w-16 h-16 bg-emerald-950 border-2 border-emerald-400 rounded-full flex items-center justify-center text-3xl mb-3 text-emerald-400">
+              ✓
+            </div>
+            <h2 class="text-lg font-extrabold text-emerald-400 mb-1">${t('takeCashTitle')}</h2>
+            <p class="text-xs text-slate-300 mb-1">${t('takeCashDesc')}</p>
+            <p class="text-[11px] text-amber-300 mb-4">${t('receiptPrinted')}</p>
+
+            <div class="p-3 bg-slate-900 rounded-xl border border-slate-700 w-full max-w-xs text-xs mb-4">
+              <div class="flex justify-between py-0.5"><span>Çekilen Tutar:</span> <span class="font-bold text-white font-mono">${state.lastDispensedAmount} ${sym}</span></div>
+              <div class="flex justify-between py-0.5"><span>Kalan Bakiye:</span> <span class="font-bold text-emerald-400 font-mono">${state.customer.accounts[curr].toLocaleString()} ${sym}</span></div>
+            </div>
+
+            <button onclick="changeScreen('MENU')" class="px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs shadow-lg transition">
+              ${t('finish')}
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    // ========================================================================
+    // KULLANICI ETKİLEŞİM & LOGIC METODLARI
+    // ========================================================================
+    function setLanguage(lang) {
+      state.language = lang;
+      renderScreen();
+    }
+
+    function changeScreen(screen) {
+      state.screen = screen;
+      renderScreen();
+    }
+
+    function handleCardAction() {
+      const btn = document.getElementById('btnInsertCard');
+      const badge = document.getElementById('cardStatusBadge');
+      const slotLight = document.getElementById('cardSlotLight');
+
+      if (!state.cardInserted) {
+        state.cardInserted = true;
+        btn.innerText = "Kartı Geri Al (Eject)";
+        btn.className = "w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition shadow";
+        badge.innerText = "Kart Takılı";
+        badge.className = "text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-600 px-2 py-0.5 rounded font-medium";
+        slotLight.className = "w-16 h-1.5 bg-blue-500 rounded-full";
+
+        state.currentPin = '';
+        changeScreen('PIN');
+      } else {
+        ejectCard();
+      }
+    }
+
+    function ejectCard() {
+      state.cardInserted = false;
+      const btn = document.getElementById('btnInsertCard');
+      const badge = document.getElementById('cardStatusBadge');
+      const slotLight = document.getElementById('cardSlotLight');
+
+      btn.innerText = "Kartı Tak (Ahmet Yılmaz)";
+      btn.className = "w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-bold transition shadow";
+      badge.innerText = "Boş";
+      badge.className = "text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-medium";
+      slotLight.className = "w-16 h-1.5 bg-emerald-500 rounded-full slot-glow";
+
+      closeDispenser();
+      changeScreen('WELCOME');
+    }
+
+    function pressPin(digit) {
+      if (state.currentPin.length < 4) {
+        state.currentPin += digit;
+        renderScreen();
+        if (state.currentPin.length === 4) {
+          setTimeout(submitPin, 200);
+        }
+      }
+    }
+
+    function clearPin() {
+      state.currentPin = '';
+      renderScreen();
+    }
+
+    function submitPin() {
+      if (state.currentPin === state.customer.pin) {
+        state.failedAttempts = 0;
+        changeScreen('MENU');
+      } else {
+        state.failedAttempts++;
+        state.currentPin = '';
+        if (state.failedAttempts >= 3) {
+          state.isBlocked = true;
+          changeScreen('BLOCKED');
+        } else {
+          alert(`Hatalı Şifre! Kalan hak: ${3 - state.failedAttempts}`);
+          renderScreen();
+        }
+      }
+    }
+
+    function resetSimulator() {
+      state.failedAttempts = 0;
+      state.isBlocked = false;
+      ejectCard();
+    }
+
+    function startWithdrawal(curr) {
+      state.selectedCurrency = curr;
+      changeScreen('SELECT_AMOUNT');
+    }
+
+    function openCustomAmount() {
+      state.enteredAmount = 0;
+      changeScreen('CUSTOM_AMOUNT');
+    }
+
+    function pressAmountDigit(d) {
+      let str = (state.enteredAmount || 0).toString();
+      if (str === '0') str = '';
+      if (str.length < 6) {
+        str += d;
+        state.enteredAmount = parseInt(str, 10);
+        renderScreen();
+      }
+    }
+
+    function clearAmount() {
+      state.enteredAmount = 0;
+      renderScreen();
+    }
+
+    // ========================================================================
+    // NAKİT DAĞITIMI, ROLLBACK & 2-PHASE COMMIT İŞ MANTIĞI
+    // ========================================================================
+    function processWithdraw(amount) {
+      if (!amount || amount <= 0) return;
+      const curr = state.selectedCurrency;
+      const sym = curr === 'USD' ? '$' : '€';
+
+      // 1. Bakiye Kontrolü
+      if (state.customer.accounts[curr] < amount) {
+        alert(t('insufficientBalance'));
+        return;
+      }
+
+      // 2. Kupür Kontrolü (Açgözlü Algoritma: 100, 50, 20)
+      let remaining = amount;
+      let dispensed = { 100: 0, 50: 0, 20: 0 };
+      const denominations = [100, 50, 20];
+
+      for (let denom of denominations) {
+        if (remaining >= denom) {
+          let count = Math.floor(remaining / denom);
+          let avail = state.atmInventory[curr][denom];
+          let take = Math.min(count, avail);
+          dispensed[denom] = take;
+          remaining -= (take * denom);
+        }
+      }
+
+      if (remaining > 0) {
+        alert(t('denomError'));
+        return;
+      }
+
+      // 3. İşlem Ekranına Geçiş
+      changeScreen('PROCESSING');
+
+      setTimeout(() => {
+        const hardwareFail = document.getElementById('chkHardwareError').checked;
+
+        // 4. DONANIM ARIZASI & SIKIŞMA (ROLLBACK TESTİ)
+        if (hardwareFail) {
+          alert(t('jamError'));
+          changeScreen('MENU');
+          return;
+        }
+
+        // 5. BAŞARILI İŞLEM (COMMIT)
+        // A. Bakiye Düşümü
+        state.customer.accounts[curr] -= amount;
+
+        // B. Kasa Stok Düşümü
+        for (let denom of denominations) {
+          state.atmInventory[curr][denom] -= dispensed[denom];
+        }
+        updateKasaDisplay();
+
+        state.lastDispensedAmount = amount;
+
+        // C. Fiziksel Para Bölmesini Aç
+        openCashDispenser(dispensed, curr);
+
+        // D. Makbuz Basımı
+        printReceipt(amount, curr, state.customer.accounts[curr]);
+
+        changeScreen('SUCCESS');
+      }, 1200);
+    }
+
+    function openCashDispenser(dispensed, curr) {
+      const slot = document.getElementById('dispenserSlot');
+      const text = document.getElementById('dispenserText');
+      const container = document.getElementById('dispensedCashContainer');
+
+      slot.classList.add('border-emerald-500');
+      text.classList.add('hidden');
+      container.classList.remove('hidden');
+
+      let billsHtml = '';
+      for (let denom in dispensed) {
+        if (dispensed[denom] > 0) {
+          billsHtml += `
+            <div class="px-3 py-1.5 bg-emerald-700 text-emerald-100 rounded-md font-mono text-xs font-extrabold border border-emerald-300 shadow">
+              ${dispensed[denom]}x ${denom} ${curr}
+            </div>
+          `;
+        }
+      }
+      container.innerHTML = billsHtml;
+    }
+
+    function closeDispenser() {
+      const slot = document.getElementById('dispenserSlot');
+      const text = document.getElementById('dispenserText');
+      const container = document.getElementById('dispensedCashContainer');
+
+      slot.classList.remove('border-emerald-500');
+      text.classList.remove('hidden');
+      container.classList.add('hidden');
+      container.innerHTML = '';
+    }
+
+    function printReceipt(amount, curr, balance) {
+      const badge = document.getElementById('receiptBadge');
+      const container = document.getElementById('receiptContainer');
+      const content = document.getElementById('receiptContent');
+
+      badge.innerText = "Basıldı";
+      badge.className = "text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded font-medium";
+
+      const now = new Date();
+      const ref = "TX-" + Math.floor(100000 + Math.random() * 900000);
+      const rate = state.rates[curr];
+
+      content.innerHTML = `
+        <div class="text-center font-bold pb-1 border-b border-dashed border-amber-300">
+          PAZARLAR BANK ATM
+        </div>
+        <div class="py-1">
+          <div>TARİH : ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>
+          <div>REF NO : ${ref}</div>
+          <div>KART   : 1234 •••• •••• 3456</div>
+          <div>DÖVİZ  : ${curr}</div>
+          <div>KUR    : 1 ${curr} = ${rate.toFixed(2)} ₺</div>
+        </div>
+        <div class="border-t border-dashed border-amber-300 pt-1 font-bold">
+          <div>ÇEKİLEN: ${amount.toFixed(2)} ${curr}</div>
+          <div>BAKİYE : ${balance.toFixed(2)} ${curr}</div>
+        </div>
+      `;
+
+      container.classList.remove('hidden');
+    }
+
+    function takeReceipt() {
+      const badge = document.getElementById('receiptBadge');
+      const container = document.getElementById('receiptContainer');
+      badge.innerText = "Beklemede";
+      badge.className = "text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-medium";
+      container.classList.add('hidden');
+    }
+
+    function updateKasaDisplay() {
+      const usdTotal = Object.entries(state.atmInventory.USD).reduce((sum, [d, q]) => sum + (d * q), 0);
+      const eurTotal = Object.entries(state.atmInventory.EUR).reduce((sum, [d, q]) => sum + (d * q), 0);
+      document.getElementById('kasaUsd').innerText = `${usdTotal.toLocaleString()} $ (100, 50, 20)`;
+      document.getElementById('kasaEur').innerText = `${eurTotal.toLocaleString()} € (100, 50, 20)`;
+    }
+
+    // İlk Yükleme
+    renderScreen();
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Derleme ve Geçici Dosyalar
+*.obj
+*.pdb
+*.suo
+*.user
+.vs/
+.vscode/
+
+# IDE & Sistem
+Thumbs.db
+Desktop.ini
